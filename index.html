@@ -6,15 +6,12 @@
 
     <title>Gargi Sansanwal Portfolio</title>
 
-    <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css"
-    />
-
     <style>
         html, body {
             margin: 0;
             padding: 0;
+            background: #f2f2f2;
+            overflow-x: hidden;
         }
 
         #pdf-container {
@@ -32,25 +29,25 @@
             overflow: hidden;
         }
 
-        .pdf-page canvas {
-            display: block;
-        }
-
-        .annotationLayer {
+        .pdf-inner {
             position: absolute;
             top: 0;
             left: 0;
-            transform-origin: 0 0;
+            transform-origin: left top;
+            transform: scaleX(1.01);
+        }
+
+        .pdf-page canvas {
+            display: block;
             pointer-events: none;
         }
 
-        .annotationLayer section,
-        .annotationLayer a {
-            pointer-events: auto;
-        }
-
-        .annotationLayer a {
+        .pdf-link {
+            position: absolute;
+            z-index: 20;
             cursor: pointer;
+            background: transparent;
+            display: block;
         }
     </style>
 </head>
@@ -59,7 +56,6 @@
 <div id="pdf-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.js"></script>
 <script src="index.js"></script>
 </body>
 </html>

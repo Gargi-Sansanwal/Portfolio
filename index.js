@@ -21,71 +21,70 @@ async function renderPDF() {
         const displayScale = Math.min(screenWidth / pdfWidth, 1);
         const outputScale = window.devicePixelRatio || 1;
 
-        const visibleViewport = page.getViewport({
+        const viewport = page.getViewport({
             scale: displayScale
-        });
-
-        const BLEED_FIX = 1.01;
-
-        const renderViewport = page.getViewport({
-            scale: displayScale * BLEED_FIX
         });
 
         const pageDiv = document.createElement("div");
         pageDiv.className = "pdf-page";
 
-        pageDiv.style.width = `${Math.ceil(visibleViewport.width)}px`;
-        pageDiv.style.height = `${Math.ceil(visibleViewport.height)}px`;
-        pageDiv.style.overflow = "hidden";
+        pageDiv.style.width = `${viewport.width}px`;
+        pageDiv.style.height = `${viewport.height}px`;
+
+        const innerDiv = document.createElement("div");
+        innerDiv.className = "pdf-inner";
+        innerDiv.style.width = `${viewport.width}px`;
+        innerDiv.style.height = `${viewport.height}px`;
 
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
 
-        canvas.width = Math.ceil(renderViewport.width * outputScale);
-        canvas.height = Math.ceil(renderViewport.height * outputScale);
+        canvas.width = Math.round(viewport.width * outputScale);
+        canvas.height = Math.round(viewport.height * outputScale);
 
-        canvas.style.width = `${Math.ceil(renderViewport.width)}px`;
-        canvas.style.height = `${Math.ceil(renderViewport.height)}px`;
-
-        pageDiv.appendChild(canvas);
-        container.appendChild(pageDiv);
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
 
         const transform =
             outputScale !== 1
                 ? [outputScale, 0, 0, outputScale, 0, 0]
                 : null;
 
+        innerDiv.appendChild(canvas);
+        pageDiv.appendChild(innerDiv);
+        container.appendChild(pageDiv);
+
         await page.render({
             canvasContext: ctx,
-            viewport: renderViewport,
+            viewport: viewport,
             transform: transform
         }).promise;
 
         const annotations = await page.getAnnotations();
 
         annotations.forEach(annotation => {
-            if (!annotation.url) return;
+            const linkUrl = annotation.url || annotation.unsafeUrl;
+
+            if (!linkUrl) return;
+            if (!annotation.rect) return;
 
             const rect = pdfjsLib.Util.normalizeRect(
-                visibleViewport.convertToViewportRectangle(annotation.rect)
+                viewport.convertToViewportRectangle(annotation.rect)
             );
 
             const link = document.createElement("a");
 
-            link.href = annotation.url;
+            link.className = "pdf-link";
+            link.href = linkUrl;
             link.target = "_blank";
             link.rel = "noopener noreferrer";
 
-            link.style.position = "absolute";
             link.style.left = `${rect[0]}px`;
             link.style.top = `${rect[1]}px`;
             link.style.width = `${rect[2] - rect[0]}px`;
             link.style.height = `${rect[3] - rect[1]}px`;
-            link.style.zIndex = "10";
-            link.style.cursor = "pointer";
-            link.style.background = "transparent";
 
-            pageDiv.appendChild(link);
+            innerDiv.appendChild(link);
         });
     }
 }
