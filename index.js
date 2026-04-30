@@ -21,34 +21,44 @@ async function renderPDF() {
         const displayScale = Math.min(screenWidth / pdfWidth, 1);
         const outputScale = window.devicePixelRatio || 1;
 
-        const viewport = page.getViewport({
+        const visibleViewport = page.getViewport({
             scale: displayScale
         });
 
+        const BLEED_FIX = 1.01;
+
         const renderViewport = page.getViewport({
-            scale: displayScale * outputScale
+            scale: displayScale * BLEED_FIX
         });
 
         const pageDiv = document.createElement("div");
         pageDiv.className = "pdf-page";
-        pageDiv.style.width = `${viewport.width}px`;
-        pageDiv.style.height = `${viewport.height}px`;
+
+        pageDiv.style.width = `${Math.ceil(visibleViewport.width)}px`;
+        pageDiv.style.height = `${Math.ceil(visibleViewport.height)}px`;
+        pageDiv.style.overflow = "hidden";
 
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
 
-        canvas.width = Math.floor(renderViewport.width);
-        canvas.height = Math.floor(renderViewport.height);
+        canvas.width = Math.ceil(renderViewport.width * outputScale);
+        canvas.height = Math.ceil(renderViewport.height * outputScale);
 
-        canvas.style.width = `${viewport.width}px`;
-        canvas.style.height = `${viewport.height}px`;
+        canvas.style.width = `${Math.ceil(renderViewport.width)}px`;
+        canvas.style.height = `${Math.ceil(renderViewport.height)}px`;
 
         pageDiv.appendChild(canvas);
         container.appendChild(pageDiv);
 
+        const transform =
+            outputScale !== 1
+                ? [outputScale, 0, 0, outputScale, 0, 0]
+                : null;
+
         await page.render({
             canvasContext: ctx,
-            viewport: renderViewport
+            viewport: renderViewport,
+            transform: transform
         }).promise;
 
         const annotations = await page.getAnnotations();
@@ -57,7 +67,7 @@ async function renderPDF() {
             if (!annotation.url) return;
 
             const rect = pdfjsLib.Util.normalizeRect(
-                viewport.convertToViewportRectangle(annotation.rect)
+                visibleViewport.convertToViewportRectangle(annotation.rect)
             );
 
             const link = document.createElement("a");
@@ -73,7 +83,7 @@ async function renderPDF() {
             link.style.height = `${rect[3] - rect[1]}px`;
             link.style.zIndex = "10";
             link.style.cursor = "pointer";
-            link.style.background = "rgba(255, 0, 0, 0)";
+            link.style.background = "transparent";
 
             pageDiv.appendChild(link);
         });
