@@ -6,11 +6,36 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
 const container = document.getElementById("pdf-container");
+const loadingState = document.getElementById("loading-state");
+const loadingText = document.getElementById("loading-text");
+
+function updateLoadingText(message) {
+    if (!loadingText) return;
+
+    loadingText.textContent = message;
+}
+
+function hideLoadingState() {
+    if (!loadingState) return;
+
+    loadingState.remove();
+}
+
+function showLoadingError() {
+    if (!loadingState) return;
+
+    loadingState.classList.add("is-error");
+    updateLoadingText("Sorry, the portfolio could not be loaded. Please refresh the page and try again.");
+}
 
 async function renderPDF() {
+    updateLoadingText("Loading portfolio...");
+
     const pdf = await pdfjsLib.getDocument(url).promise;
 
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        updateLoadingText(`Loading portfolio ${pageNum} of ${pdf.numPages}...`);
+
         const page = await pdf.getPage(pageNum);
 
         const baseViewport = page.getViewport({ scale: 1 });
@@ -87,8 +112,11 @@ async function renderPDF() {
             innerDiv.appendChild(link);
         });
     }
+
+    hideLoadingState();
 }
 
 renderPDF().catch(error => {
     console.error("PDF rendering error:", error);
+    showLoadingError();
 });
